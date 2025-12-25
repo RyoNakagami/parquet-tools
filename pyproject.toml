@@ -1,0 +1,22 @@
+[project]
+name = "parquet-tools"
+version = "0.1.1"
+description = "CLI tools for working with Parquet files"
+readme = "README.md"
+authors = [
+    { name = "RyoNak", email = "nakagamiryo0901@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pandas>=2.3.3",
+    "pyarrow>=18.0.0",
+    "pyyaml>=6.0.3",
+    "typer>=0.15.0",
+]
+
+[project.scripts]
+parquet-tools = "parquet_tools.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"

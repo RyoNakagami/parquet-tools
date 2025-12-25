@@ -1,0 +1,13 @@
+meta-data:
+  repository_name: parquet-tools
+  visibility: public
+  org-name: RyoNakagami
+  tag:
+    - uv
+    - Python
+    - parquet
+    - cli
+  description: |
+    CLI tools for working with Parquet files
+  homepage: null
+  license: mit
