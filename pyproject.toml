@@ -1,6 +1,6 @@
 [project]
 name = "parquet-tools"
-version = "0.1.1"
+version = "0.2.0"
 description = "CLI tools for working with Parquet files"
 readme = "README.md"
 authors = [
@@ -16,6 +16,12 @@ dependencies = [
 
 [project.scripts]
 parquet-tools = "parquet_tools.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
