@@ -17,6 +17,12 @@ dependencies = [
 [project.scripts]
 parquet-tools = "parquet_tools.cli:main"
 
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.0.0",
+]
+
 [build-system]
 requires = ["uv_build>=0.9.11,<0.10.0"]
 build-backend = "uv_build"

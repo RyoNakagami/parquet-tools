@@ -197,6 +197,55 @@ For detailed schema documentation, see [docs/schema-guide.md](docs/guidelines/sc
 
 - Python >= 3.13
 
+## Development
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/RyoNakagami/parquet-tools.git
+cd parquet-tools
+
+# Install dependencies including dev tools
+uv sync --group dev
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run with coverage report
+uv run pytest --cov=parquet_tools --cov-report=term-missing
+```
+
+### Test Structure
+
+```text
+tests/
+├── __init__.py
+├── conftest.py      # Pytest fixtures
+└── test_cli.py      # CLI command tests
+```
+
+| Test Class | Description |
+| ---------- | ----------- |
+| `TestHeadCommand` | Tests for `head` command |
+| `TestInfoCommand` | Tests for `info` command |
+| `TestMergeCommand` | Tests for `merge` command |
+| `TestCsv2ParquetCommand` | Tests for `csv2parquet` command |
+| `TestUtilityFunctions` | Tests for internal utility functions |
+| `TestCompressionEnum` | Tests for compression codec enum |
+| `TestSchemaTypes` | Tests for schema type conversions |
+| `TestVersionOption` | Tests for `--version` option |
+| `TestLibraryModule` | Tests for library module |
+
+For detailed testing documentation, see [docs/testing.md](docs/testing.md).
+
 ## License
 
 MIT

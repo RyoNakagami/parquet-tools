@@ -1,4 +1,5 @@
 import json
+import sys
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Optional
@@ -7,6 +8,8 @@ import pyarrow as pa
 import pyarrow.csv as pa_csv
 import pyarrow.parquet as pq
 import typer
+
+from parquet_tools.library import __version__
 
 
 class Compression(str, Enum):
@@ -20,6 +23,30 @@ class Compression(str, Enum):
 
 
 app = typer.Typer(help="CLI tools for working with Parquet files")
+
+
+def version_callback(value: bool) -> None:
+    if value:
+        typer.echo(f"parquet-tools {__version__}")
+        print(f"Python {sys.version.split()[0]}")
+        raise typer.Exit()
+
+
+@app.callback()
+def callback(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            "-v",
+            callback=version_callback,
+            is_eager=True,
+            help="Show version and exit",
+        ),
+    ] = False,
+) -> None:
+    """CLI tools for working with Parquet files."""
+    pass
 
 
 @app.command()
