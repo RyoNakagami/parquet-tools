@@ -78,10 +78,10 @@ hotfix/<task-description>
 
 | ブランチ名                             | 用途                |
 | --------------------------------- | ----------------- |
-| `feature/0123-add-login`             | 新機能               |
-| `bugfix/0123-fix-login-error`        | 修正                |
-| `issue/0123`                         | 複数サブタスクを含むIssue統合 |
-| `hotfix/0145-critical-fix`           | 緊急対応              |
+| `feature/0123/add-login`             | 新機能               |
+| `bugfix/0123/fix-login-error`        | 修正                |
+| `issue/0123/integration`                         | 複数サブタスクを含むIssue統合 |
+| `hotfix/0145/critical-fix`           | 緊急対応              |
 
 ## 2. 開発フロー
 
@@ -189,7 +189,8 @@ $ git branch -D $(git branch --list "feature/*")
 ### Rule 4: 衝突を生む可能性のあるブランチは作らない
 
 - `git switch -c feature` のように意図が不明瞭な名前や既存ブランチと衝突する可能性のある名前は避ける
-- Gitは内部的に ブランチ名をパス（ディレクトリ構造）として管理しているため，`feature` が作成されていると `feature/login-v2` が名前衝突して作成できなくなってしまう
+- Gitは内部的に ブランチ名をパス（ディレクトリ構造）として管理しているため，`feature` が作成されていると
+  `feature/login-v2` が名前衝突して作成できなくなってしまう
   - 同じ階層にファイルとディレクトリを同時に作れないため
 
 **📘 Example**

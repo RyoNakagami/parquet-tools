@@ -38,14 +38,14 @@ fields:
 ## Required Fields
 
 | Field | Required | Description |
-|-------|----------|-------------|
+| ------- | ---------- | ------------- |
 | `name` | Yes | Column name (must match CSV header exactly) |
 | `type` | No | Data type (defaults to `string` if omitted) |
 
 ## Supported Data Types
 
 | Type | Description | Example Values |
-|------|-------------|----------------|
+| ------ | ------------- | ---------------- |
 | `string` | Text data | `"hello"`, `"2024-01-01"` |
 | `int64` | 64-bit integer | `42`, `-100`, `0` |
 | `float64` | 64-bit floating point | `3.14`, `-0.5`, `1e10` |

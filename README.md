@@ -115,7 +115,7 @@ parquet-tools merge /path/to/input_dir -c none
 **Compression codecs:**
 
 | Codec | Description |
-|-------|-------------|
+| ------- | ------------- |
 | `snappy` | Standard, balanced speed/compression (default) |
 | `zstd` | High compression ratio, recommended for storage |
 | `gzip` | High compression, good for archiving |
@@ -177,7 +177,7 @@ fields:
 **Supported types:**
 
 | Type | Description |
-|------|-------------|
+| ------ | ------------- |
 | `string` | Text data |
 | `int64` | 64-bit integer |
 | `float64` | 64-bit floating point |
