@@ -28,7 +28,7 @@ app = typer.Typer(help="CLI tools for working with Parquet files")
 def version_callback(value: bool) -> None:
     if value:
         typer.echo(f"parquet-tools {__version__}")
-        print(f"Python {sys.version.split()[0]}")
+        typer.echo(f"Python {sys.version.split()[0]}")
         raise typer.Exit()
 
 
