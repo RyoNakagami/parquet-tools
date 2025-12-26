@@ -1,6 +1,5 @@
 """Tests for parquet-tools CLI commands."""
 
-import json
 from pathlib import Path
 
 import pandas as pd

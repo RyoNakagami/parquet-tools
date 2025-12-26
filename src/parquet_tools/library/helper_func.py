@@ -2,36 +2,54 @@ from pathlib import Path
 import tomllib
 from importlib.metadata import version, PackageNotFoundError
 
+PACKAGE_NAME = "parquet-tools"
+FALLBACK_VERSION = "0.0.0"
+
 
 def get_version() -> str:
     """
-    Retrieve the version of the installed package.
+    Retrieve the package version.
 
-    Priority:
-    1. Installed metadata (importlib.metadata.version)
-    2. [DEBUG]: pyproject.toml in development mode
-    3. [DEBUG]: fallback "0.0.0"
+    Resolution order:
+    1. Installed package metadata
+    2. Development mode: pyproject.toml
+    3. Fallback version
     """
 
-    # 1. Installed package metadata
+    installed = _get_installed_version()
+    if installed is not None:
+        return installed
+
+    dev_version = _get_version_from_pyproject()
+    if dev_version is not None:
+        return dev_version
+
+    return FALLBACK_VERSION
+
+
+def _get_installed_version() -> str | None:
+    """Get version from installed package metadata."""
     try:
-        return version("parquet-tools")
+        return version(PACKAGE_NAME)
     except PackageNotFoundError:
-        pass
+        return None
 
-    # 2. [DEBUG]: Development mode: look for pyproject.toml
-    current = Path(__file__).resolve()
-    for parent in current.parents:
+
+def _get_version_from_pyproject() -> str | None:
+    """Search parent directories for pyproject.toml and extract version."""
+    for parent in Path(__file__).resolve().parents:
         pyproject = parent / "pyproject.toml"
-        if pyproject.exists():
-            try:
-                with pyproject.open("rb") as f:
-                    data = tomllib.load(f)
-                project_version = data.get("project", {}).get("version")
-                if project_version:
-                    return project_version
-            except Exception:
-                pass
+        if not pyproject.is_file():
+            continue
 
-    # 3. [DEBUG]: fallback
-    return "0.0.0"
+        try:
+            with pyproject.open("rb") as f:
+                data = tomllib.load(f)
+        except (OSError, tomllib.TOMLDecodeError):
+            continue
+
+        project_version = data.get("project", {}).get("version")
+        if isinstance(project_version, str):
+            return project_version
+
+    return None
