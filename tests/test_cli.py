@@ -558,6 +558,164 @@ class TestSchemaTypes:
         assert table.schema.field("col1").type == pa.string()
 
 
+class TestQueryCommand:
+    """Tests for the 'query' command."""
+
+    def test_query_basic(self, tmp_parquet_file: Path) -> None:
+        """Test basic SQL query execution."""
+        result = runner.invoke(
+            app, ["query", str(tmp_parquet_file), "SELECT * FROM data"]
+        )
+        assert result.exit_code == 0
+        assert "Alice" in result.stdout
+        assert "Bob" in result.stdout
+
+    def test_query_with_filter(self, tmp_parquet_file: Path) -> None:
+        """Test SQL query with WHERE clause."""
+        result = runner.invoke(
+            app, ["query", str(tmp_parquet_file), "SELECT name FROM data WHERE value > 30"]
+        )
+        assert result.exit_code == 0
+        assert "David" in result.stdout
+        assert "Eve" in result.stdout
+        assert "Alice" not in result.stdout
+
+    def test_query_with_aggregation(self, tmp_parquet_file: Path) -> None:
+        """Test SQL query with aggregation."""
+        result = runner.invoke(
+            app, ["query", str(tmp_parquet_file), "SELECT COUNT(*) as cnt FROM data"]
+        )
+        assert result.exit_code == 0
+        assert "5" in result.stdout
+
+    def test_query_output_to_csv(self, tmp_parquet_file: Path, tmp_path: Path) -> None:
+        """Test query with CSV output."""
+        output_csv = tmp_path / "result.csv"
+        result = runner.invoke(
+            app,
+            [
+                "query",
+                str(tmp_parquet_file),
+                "SELECT * FROM data LIMIT 2",
+                "-o",
+                str(output_csv),
+            ],
+        )
+        assert result.exit_code == 0
+        assert output_csv.exists()
+        assert "Saved:" in result.stdout
+
+        # Verify CSV content
+        df = pd.read_csv(output_csv)
+        assert len(df) == 2
+
+    def test_query_from_sql_file(self, tmp_parquet_file: Path, tmp_path: Path) -> None:
+        """Test query from SQL file."""
+        sql_file = tmp_path / "query.sql"
+        sql_file.write_text("SELECT name, value FROM data WHERE id <= 2")
+
+        result = runner.invoke(
+            app, ["query", str(tmp_parquet_file), "--sql-file", str(sql_file)]
+        )
+        assert result.exit_code == 0
+        assert "Alice" in result.stdout
+        assert "Bob" in result.stdout
+        assert "Charlie" not in result.stdout
+
+    def test_query_sql_file_with_output(
+        self, tmp_parquet_file: Path, tmp_path: Path
+    ) -> None:
+        """Test query from SQL file with CSV output."""
+        sql_file = tmp_path / "query.sql"
+        sql_file.write_text("SELECT * FROM data")
+        output_csv = tmp_path / "result.csv"
+
+        result = runner.invoke(
+            app,
+            [
+                "query",
+                str(tmp_parquet_file),
+                "--sql-file",
+                str(sql_file),
+                "-o",
+                str(output_csv),
+            ],
+        )
+        assert result.exit_code == 0
+        assert output_csv.exists()
+
+        df = pd.read_csv(output_csv)
+        assert len(df) == 5
+
+    def test_query_file_not_found(self, tmp_path: Path) -> None:
+        """Test query with non-existent parquet file."""
+        result = runner.invoke(
+            app,
+            ["query", str(tmp_path / "nonexistent.parquet"), "SELECT * FROM data"],
+        )
+        assert result.exit_code == 1
+        assert "File not found" in result.stdout
+
+    def test_query_sql_file_not_found(self, tmp_parquet_file: Path, tmp_path: Path) -> None:
+        """Test query with non-existent SQL file."""
+        result = runner.invoke(
+            app,
+            [
+                "query",
+                str(tmp_parquet_file),
+                "--sql-file",
+                str(tmp_path / "nonexistent.sql"),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "SQL file not found" in result.stdout
+
+    def test_query_both_sql_and_file_error(
+        self, tmp_parquet_file: Path, tmp_path: Path
+    ) -> None:
+        """Test error when both SQL string and --sql-file are provided."""
+        sql_file = tmp_path / "query.sql"
+        sql_file.write_text("SELECT * FROM data")
+
+        result = runner.invoke(
+            app,
+            [
+                "query",
+                str(tmp_parquet_file),
+                "SELECT * FROM data",
+                "--sql-file",
+                str(sql_file),
+            ],
+        )
+        assert result.exit_code == 1
+        assert "Cannot specify both" in result.stdout
+
+    def test_query_no_sql_error(self, tmp_parquet_file: Path) -> None:
+        """Test error when neither SQL string nor --sql-file is provided."""
+        result = runner.invoke(app, ["query", str(tmp_parquet_file)])
+        assert result.exit_code == 1
+        assert "Must provide either SQL string or --sql-file" in result.stdout
+
+    def test_query_invalid_sql(self, tmp_parquet_file: Path) -> None:
+        """Test error with invalid SQL syntax."""
+        result = runner.invoke(
+            app, ["query", str(tmp_parquet_file), "INVALID SQL QUERY"]
+        )
+        assert result.exit_code == 1
+        assert "SQL error" in result.stdout
+
+    def test_query_empty_sql_file(self, tmp_parquet_file: Path, tmp_path: Path) -> None:
+        """Test error with empty SQL file."""
+        sql_file = tmp_path / "empty.sql"
+        sql_file.write_text("")
+
+        result = runner.invoke(
+            app, ["query", str(tmp_parquet_file), "--sql-file", str(sql_file)]
+        )
+        assert result.exit_code == 1
+        assert "SQL file is empty" in result.stdout
+
+
 class TestVersionOption:
     """Tests for --version option."""
 
