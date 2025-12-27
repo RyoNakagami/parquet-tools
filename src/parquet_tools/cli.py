@@ -426,6 +426,9 @@ def query(
     except duckdb.Error as e:
         typer.echo(f"SQL error: {e}")
         raise typer.Exit(1)
+    finally:
+        # Close DuckDB connection ensuring resources are released
+        con.close()
 
     # Output result
     if output:
