@@ -93,11 +93,41 @@ class TestInfoCommand:
         # Parse YAML output
         data = yaml.safe_load(result.stdout)
         assert "file" in data
-        assert "schema" in data
+        assert "fields" in data
         assert data["file"]["rows"] == 5
         assert data["file"]["columns"] == 3
-        assert "id" in data["schema"]
-        assert "name" in data["schema"]
+        # Check fields array format
+        assert isinstance(data["fields"], list)
+        field_names = [f["name"] for f in data["fields"]]
+        assert "id" in field_names
+        assert "name" in field_names
+
+    def test_info_json_output(self, tmp_parquet_file: Path) -> None:
+        """Test info command with JSON output."""
+        import json
+
+        result = runner.invoke(app, ["info", str(tmp_parquet_file), "--json"])
+        assert result.exit_code == 0
+
+        # Parse JSON output
+        data = json.loads(result.stdout)
+        assert "file" in data
+        assert "fields" in data
+        assert data["file"]["rows"] == 5
+        assert data["file"]["columns"] == 3
+        # Check fields array format
+        assert isinstance(data["fields"], list)
+        field_names = [f["name"] for f in data["fields"]]
+        assert "id" in field_names
+        assert "name" in field_names
+
+    def test_info_yaml_json_mutual_exclusion(self, tmp_parquet_file: Path) -> None:
+        """Test info command with both --yaml and --json raises error."""
+        result = runner.invoke(
+            app, ["info", str(tmp_parquet_file), "--yaml", "--json"]
+        )
+        assert result.exit_code == 1
+        assert "Cannot specify both" in result.stdout
 
     def test_info_shows_compression(self, tmp_parquet_file_gzip: Path) -> None:
         """Test info command shows compression codec."""
@@ -714,6 +744,142 @@ class TestQueryCommand:
         )
         assert result.exit_code == 1
         assert "SQL file is empty" in result.stdout
+
+
+class TestCsv2ParquetNullHandling:
+    """Tests for null/NA handling in csv2parquet command."""
+
+    def test_null_values_in_string_column(
+        self, tmp_csv_with_null_values: Path, tmp_path: Path
+    ) -> None:
+        """Test that various null representations become null in string columns."""
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app, ["csv2parquet", str(tmp_csv_with_null_values), "-o", str(output_file)]
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        # name column: "", NA, N/A, null should all be null
+        name_col = table.column("name")
+        assert name_col[0].as_py() == "Alice"  # valid string
+        assert name_col[1].as_py() is None  # empty string -> null
+        assert name_col[2].as_py() is None  # NA -> null
+        assert name_col[3].as_py() is None  # N/A -> null
+        assert name_col[4].as_py() is None  # null -> null
+
+    def test_null_values_preserved_after_schema_cast(
+        self, tmp_csv_with_null_values: Path, tmp_path: Path
+    ) -> None:
+        """Test that null values are preserved when casting with schema."""
+        schema_path = tmp_path / "schema.yaml"
+        schema_path.write_text("fields:\n  - name: id\n    type: int64\n")
+
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app,
+            [
+                "csv2parquet",
+                str(tmp_csv_with_null_values),
+                "-o",
+                str(output_file),
+                "--schema",
+                str(schema_path),
+            ],
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        # id column should be int64
+        assert table.schema.field("id").type == pa.int64()
+        # name column should still have nulls
+        name_col = table.column("name")
+        assert name_col[0].as_py() == "Alice"
+        assert name_col[1].as_py() is None  # empty string -> null
+
+    def test_empty_string_becomes_null(self, tmp_path: Path) -> None:
+        """Test that empty string specifically becomes null."""
+        csv_path = tmp_path / "empty.csv"
+        # Empty field between commas becomes null, not trailing empty line
+        csv_path.write_text("col1,col2\nvalue,\n")
+
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app, ["csv2parquet", str(csv_path), "-o", str(output_file)]
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        col1 = table.column("col1")
+        col2 = table.column("col2")
+        assert col1[0].as_py() == "value"
+        assert col2[0].as_py() is None  # empty string -> null
+
+    def test_na_variants_become_null(self, tmp_path: Path) -> None:
+        """Test that various NA representations become null."""
+        csv_path = tmp_path / "na_variants.csv"
+        # Note: <NA> is NOT in PyArrow's default null values list
+        csv_path.write_text("col\nNA\nN/A\nn/a\n#N/A\n")
+
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app, ["csv2parquet", str(csv_path), "-o", str(output_file)]
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        col = table.column("col")
+        # All NA variants should be null
+        for i in range(len(col)):
+            assert col[i].as_py() is None, f"Row {i} should be null"
+
+    def test_null_variants_become_null(self, tmp_path: Path) -> None:
+        """Test that NULL and null become null."""
+        csv_path = tmp_path / "null_variants.csv"
+        csv_path.write_text("col\nNULL\nnull\n")
+
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app, ["csv2parquet", str(csv_path), "-o", str(output_file)]
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        col = table.column("col")
+        assert col[0].as_py() is None  # NULL -> null
+        assert col[1].as_py() is None  # null -> null
+
+    def test_nan_variants_become_null(self, tmp_path: Path) -> None:
+        """Test that NaN variants become null."""
+        csv_path = tmp_path / "nan_variants.csv"
+        csv_path.write_text("col\nNaN\nnan\n-NaN\n-nan\n")
+
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app, ["csv2parquet", str(csv_path), "-o", str(output_file)]
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        col = table.column("col")
+        for i in range(len(col)):
+            assert col[i].as_py() is None, f"Row {i} should be null"
+
+    def test_null_count_in_parquet(
+        self, tmp_csv_with_null_values: Path, tmp_path: Path
+    ) -> None:
+        """Test that null count is correctly reported in parquet metadata."""
+        output_file = tmp_path / "output.parquet"
+        result = runner.invoke(
+            app, ["csv2parquet", str(tmp_csv_with_null_values), "-o", str(output_file)]
+        )
+        assert result.exit_code == 0
+
+        table = pq.read_table(output_file)
+        # name column has 4 nulls (rows 2-5: "", NA, N/A, null)
+        name_col = table.column("name")
+        null_count = sum(1 for i in range(len(name_col)) if name_col[i].as_py() is None)
+        assert null_count == 4
 
 
 class TestVersionOption:

@@ -99,6 +99,7 @@ The `conftest.py` file contains pytest fixtures that provide reusable test data:
 | `tmp_invalid_schema_no_name` | Invalid schema (missing field name) |
 | `tmp_empty_parquet_dir` | Empty directory for error testing |
 | `large_parquet_file` | Parquet file with 100 rows |
+| `tmp_csv_with_null_values` | CSV file with various null representations |
 
 ### test_cli.py - Test Classes
 
@@ -122,6 +123,8 @@ Tests for the `info` command functionality.
 | ----------- | ----------- |
 | `test_info_basic` | Verify basic metadata display |
 | `test_info_yaml_output` | Verify `--yaml` output format |
+| `test_info_json_output` | Verify `--json` output format |
+| `test_info_yaml_json_mutual_exclusion` | Verify error when both --yaml and --json provided |
 | `test_info_shows_compression` | Verify compression codec display |
 | `test_info_file_not_found` | Verify error handling for missing files |
 
@@ -208,6 +211,20 @@ Tests for the `query` command functionality (SQL queries via DuckDB).
 | `test_query_no_sql_error` | Verify error when no SQL input provided |
 | `test_query_invalid_sql` | Verify error handling for invalid SQL |
 | `test_query_empty_sql_file` | Verify error for empty SQL file |
+
+#### TestCsv2ParquetNullHandling
+
+Tests for NULL/NA handling in csv2parquet command.
+
+| Test Method | Description |
+| ----------- | ----------- |
+| `test_null_values_in_string_column` | Verify various null representations become null |
+| `test_null_values_preserved_after_schema_cast` | Verify nulls preserved after type casting |
+| `test_empty_string_becomes_null` | Verify empty string becomes null |
+| `test_na_variants_become_null` | Verify NA, N/A, n/a, #N/A become null |
+| `test_null_variants_become_null` | Verify NULL, null become null |
+| `test_nan_variants_become_null` | Verify NaN, nan, -NaN, -nan become null |
+| `test_null_count_in_parquet` | Verify null count is correct in output |
 
 #### TestVersionOption
 
