@@ -190,6 +190,25 @@ Tests for schema type conversions.
 | `test_boolean_type` | Verify boolean conversion |
 | `test_default_type_is_string` | Verify default string type |
 
+#### TestQueryCommand
+
+Tests for the `query` command functionality (SQL queries via DuckDB).
+
+| Test Method | Description |
+| ----------- | ----------- |
+| `test_query_basic` | Verify basic SQL query execution |
+| `test_query_with_filter` | Verify SQL query with WHERE clause |
+| `test_query_with_aggregation` | Verify SQL query with aggregation |
+| `test_query_output_to_csv` | Verify `-o` option exports to CSV |
+| `test_query_from_sql_file` | Verify `--sql-file` option works |
+| `test_query_sql_file_with_output` | Verify SQL file with CSV output |
+| `test_query_file_not_found` | Verify error for missing parquet file |
+| `test_query_sql_file_not_found` | Verify error for missing SQL file |
+| `test_query_both_sql_and_file_error` | Verify error when both SQL string and file provided |
+| `test_query_no_sql_error` | Verify error when no SQL input provided |
+| `test_query_invalid_sql` | Verify error handling for invalid SQL |
+| `test_query_empty_sql_file` | Verify error for empty SQL file |
+
 #### TestVersionOption
 
 Tests for the `--version` option.

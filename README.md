@@ -193,6 +193,43 @@ fields:
 
 For detailed schema documentation, see [docs/schema-guide.md](docs/guidelines/schema-guide.md).
 
+### query
+
+Execute SQL queries on a Parquet file using DuckDB.
+
+```bash
+# Inline SQL query
+parquet-tools query data.parquet "SELECT * FROM data LIMIT 10"
+
+# SQL query with filtering and aggregation
+parquet-tools query data.parquet "SELECT col1, COUNT(*) FROM data GROUP BY col1"
+
+# SQL from file
+parquet-tools query data.parquet --sql-file analysis.sql
+
+# Save result to CSV
+parquet-tools query data.parquet "SELECT * FROM data WHERE value > 100" -o result.csv
+
+# SQL file with output
+parquet-tools query data.parquet --sql-file analysis.sql -o result.csv
+```
+
+**Arguments:**
+
+- `FILE`: Parquet file to query (required)
+- `SQL`: SQL query string (optional, mutually exclusive with `--sql-file`)
+
+**Options:**
+
+- `--sql-file`: Path to SQL file containing the query
+- `-o, --output`: Output file path (CSV format)
+
+**Notes:**
+
+- The Parquet file is exposed as a table named `data`
+- Exactly one of (inline SQL, `--sql-file`) must be provided
+- Uses DuckDB for efficient query execution
+
 ## Requirements
 
 - Python >= 3.13
@@ -241,6 +278,7 @@ tests/
 | `TestUtilityFunctions` | Tests for internal utility functions |
 | `TestCompressionEnum` | Tests for compression codec enum |
 | `TestSchemaTypes` | Tests for schema type conversions |
+| `TestQueryCommand` | Tests for `query` command |
 | `TestVersionOption` | Tests for `--version` option |
 | `TestLibraryModule` | Tests for library module |
 
