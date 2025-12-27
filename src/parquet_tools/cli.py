@@ -355,6 +355,90 @@ def csv2parquet(
     typer.echo(f"Saved: {output_path} (compression: {compression.value})")
 
 
+@app.command()
+def query(
+    file: Annotated[Path, typer.Argument(help="Parquet file to query")],
+    sql: Annotated[
+        Optional[str],
+        typer.Argument(help="SQL query to execute (use 'data' as table name)"),
+    ] = None,
+    sql_file: Annotated[
+        Optional[Path],
+        typer.Option("--sql-file", help="Path to SQL file containing the query"),
+    ] = None,
+    output: Annotated[
+        Optional[Path],
+        typer.Option("-o", "--output", help="Output file path (CSV format)"),
+    ] = None,
+) -> None:
+    """Execute SQL queries on a Parquet file using DuckDB.
+
+    The Parquet file is exposed as a table named 'data'.
+
+    Examples:
+
+        parquet-tools query data.parquet "SELECT * FROM data LIMIT 10"
+
+        parquet-tools query data.parquet --sql-file analysis.sql -o result.csv
+    """
+    import duckdb
+
+    # Validate file exists
+    if not file.exists():
+        typer.echo(f"File not found: {file}")
+        raise typer.Exit(1)
+
+    # Validate SQL input: exactly one of (sql, sql_file) must be provided
+    if sql is not None and sql_file is not None:
+        typer.echo(
+            "Error: Cannot specify both SQL string and --sql-file. Use one or the other."
+        )
+        raise typer.Exit(1)
+
+    if sql is None and sql_file is None:
+        typer.echo("Error: Must provide either SQL string or --sql-file.")
+        raise typer.Exit(1)
+
+    # Read SQL from file if specified
+    query_sql: str = sql if sql is not None else ""
+    if sql_file is not None:
+        if not sql_file.exists():
+            typer.echo(f"SQL file not found: {sql_file}")
+            raise typer.Exit(1)
+        try:
+            query_sql = sql_file.read_text().strip()
+        except OSError as e:
+            typer.echo(f"Error reading SQL file: {e}")
+            raise typer.Exit(1)
+
+        if not query_sql:
+            typer.echo(f"SQL file is empty: {sql_file}")
+            raise typer.Exit(1)
+
+    # Execute query with DuckDB
+    try:
+        con = duckdb.connect(":memory:")
+        # Create a view named 'data' pointing to the parquet file
+        # Escape single quotes in file path to handle paths with special characters
+        escaped_path = str(file).replace("'", "''")
+        con.execute(f"CREATE VIEW data AS SELECT * FROM read_parquet('{escaped_path}')")
+        result = con.execute(query_sql).df()
+    except duckdb.Error as e:
+        typer.echo(f"SQL error: {e}")
+        raise typer.Exit(1)
+
+    # Output result
+    if output:
+        try:
+            result.to_csv(output, index=False)
+            typer.echo(f"Saved: {output}")
+        except OSError as e:
+            typer.echo(f"Error writing output file: {e}")
+            raise typer.Exit(1)
+    else:
+        typer.echo(result.to_string())
+
+
 def main() -> None:
     app()
 
