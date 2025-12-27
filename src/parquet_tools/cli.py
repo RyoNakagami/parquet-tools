@@ -91,10 +91,17 @@ def info(
     yaml_output: Annotated[
         bool, typer.Option("--yaml", help="Output in YAML format")
     ] = False,
+    json_output: Annotated[
+        bool, typer.Option("--json", help="Output in JSON format")
+    ] = False,
 ) -> None:
     """Display metadata and schema information of a Parquet file."""
     if not file.exists():
         typer.echo(f"File not found: {file}")
+        raise typer.Exit(1)
+
+    if yaml_output and json_output:
+        typer.echo("Error: Cannot specify both --yaml and --json.")
         raise typer.Exit(1)
 
     parquet_file = pq.ParquetFile(file)
@@ -102,8 +109,9 @@ def info(
     schema = parquet_file.schema_arrow
     compression = _get_compression_info(parquet_file)
 
-    if yaml_output:
-        import yaml
+    if yaml_output or json_output:
+        # Build fields array preserving column order
+        fields = [{"name": field.name, "type": str(field.type)} for field in schema]
 
         data = {
             "file": {
@@ -114,13 +122,19 @@ def info(
                 "compression": compression,
                 "created_by": metadata.created_by,
             },
-            "schema": {field.name: str(field.type) for field in schema},
+            "fields": fields,
         }
-        typer.echo(
-            yaml.dump(
-                data, default_flow_style=False, allow_unicode=True, sort_keys=False
+
+        if json_output:
+            typer.echo(json.dumps(data, indent=2, ensure_ascii=False))
+        else:
+            import yaml
+
+            typer.echo(
+                yaml.dump(
+                    data, default_flow_style=False, allow_unicode=True, sort_keys=False
+                )
             )
-        )
     else:
         typer.echo("=== File Info ===")
         typer.echo(f"Path: {file}")

@@ -50,11 +50,15 @@ parquet-tools info data.parquet
 
 # Output in YAML format
 parquet-tools info data.parquet --yaml
+
+# Output in JSON format
+parquet-tools info data.parquet --json
 ```
 
 **Options:**
 
 - `--yaml`: Output in YAML format
+- `--json`: Output in JSON format
 
 **Example output:**
 
@@ -83,10 +87,33 @@ file:
   row_groups: 1
   compression: SNAPPY
   created_by: parquet-cpp ...
-schema:
-  id: int64
-  name: string
-  value: double
+fields:
+  - name: id
+    type: int64
+  - name: name
+    type: string
+  - name: value
+    type: double
+```
+
+**JSON output:**
+
+```json
+{
+  "file": {
+    "path": "data.parquet",
+    "rows": 1000,
+    "columns": 3,
+    "row_groups": 1,
+    "compression": "SNAPPY",
+    "created_by": "parquet-cpp ..."
+  },
+  "fields": [
+    {"name": "id", "type": "int64"},
+    {"name": "name", "type": "string"},
+    {"name": "value", "type": "double"}
+  ]
+}
 ```
 
 ### merge
@@ -191,6 +218,26 @@ fields:
 - `struct<...>` - Nested struct types
 - `map<K,V>` - Map types
 
+**NULL/NA handling:**
+
+The following values in CSV are automatically converted to `null` in Parquet:
+
+| Value | Description |
+| ----- | ----------- |
+| `` (empty) | Empty string |
+| `NA` | Common NA representation |
+| `N/A` | Common NA representation |
+| `n/a` | Common NA representation (lowercase) |
+| `#N/A` | Excel-style NA |
+| `NULL` | SQL-style null |
+| `null` | JSON-style null |
+| `NaN` | Not a Number |
+| `nan` | Not a Number (lowercase) |
+| `-NaN` | Negative NaN |
+| `-nan` | Negative NaN (lowercase) |
+
+Note: `<NA>` is NOT converted to null.
+
 For detailed schema documentation, see [docs/schema-guide.md](docs/guidelines/schema-guide.md).
 
 ### query
@@ -279,6 +326,7 @@ tests/
 | `TestCompressionEnum` | Tests for compression codec enum |
 | `TestSchemaTypes` | Tests for schema type conversions |
 | `TestQueryCommand` | Tests for `query` command |
+| `TestCsv2ParquetNullHandling` | Tests for NULL/NA handling in csv2parquet |
 | `TestVersionOption` | Tests for `--version` option |
 | `TestLibraryModule` | Tests for library module |
 

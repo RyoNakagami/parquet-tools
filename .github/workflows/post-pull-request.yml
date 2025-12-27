@@ -48,11 +48,6 @@ jobs:
           VERSION=$(uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Tag main branch
-        run: |
-          git tag "v$VERSION"
-          git push origin "v$VERSION"
-
       # -------------------------------
       # Step 3: Create Git tag and Release
       # -------------------------------

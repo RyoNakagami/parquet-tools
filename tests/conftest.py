@@ -158,3 +158,19 @@ def large_parquet_file(tmp_path: Path) -> Path:
     file_path = tmp_path / "large.parquet"
     df.to_parquet(file_path)
     return file_path
+
+
+@pytest.fixture
+def tmp_csv_with_null_values(tmp_path: Path) -> Path:
+    """Create a CSV file with various null representations."""
+    csv_path = tmp_path / "null_values.csv"
+    # PyArrow default null values: "", NA, N/A, NULL, NaN, n/a, nan, null, etc.
+    csv_path.write_text(
+        "id,name,value,note\n"
+        "1,Alice,100,valid\n"
+        "2,,200,empty_string\n"
+        "3,NA,300,NA_string\n"
+        "4,N/A,NULL,NULL_string\n"
+        "5,null,NaN,nan_string\n"
+    )
+    return csv_path
